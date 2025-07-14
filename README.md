@@ -4,9 +4,11 @@
 Keycloak을 사용하여 인증 JupyterHub에 인증을 구현합니다.
 JupyterHub에서 JWT 토큰을 사용하여 Vault에 인증을 구현합니다.
 
-- Keycloak (Dev - tested 26.2.5)
-- JupyterHub on Minikube (tested 1.36.0)
-- Vault (Dev - tested 1.20.0)
+- Keycloak (tested 26.2.5)
+- JupyterHub (tested helm chart4.2.0 - hub 5.3.0)
+- Minikube (tested 1.36.0)
+- Vault (tested 1.20.0)
+- Terraform (tested 1.12.2)
 
 ## 1. 사전 실행 사항
 
@@ -50,6 +52,8 @@ vault server -dev -dev-root-token-id=root
 minikube start
 ```
 
+minikube의 호스트 호출 주소를 `/etc/hosts`에 추가합니다.
+
 ```bash
 127.0.0.1		host.minikube.internal
 ```
@@ -63,6 +67,8 @@ cd terraform
 terraform init
 terraform apply
 ```
+
+JupyterHub 서비스가 실행되면 port-forward를 실행하여 외부에서 접속할 수 있도록 합니다.
 
 ```bash
 kubectl port-forward svc/proxy-public 30080:80 -n default
@@ -142,6 +148,8 @@ JupyterHub는 Helm 차트를 통해 배포되며, `values.yaml.tpl` 파일에서
 ## 3. 테스트
 
 1. 브라우저에서 `port-forward` 실행한 30080 포트에서 접속하여 JupyterHub에 접속합니다.
+
+<http://127.0.0.1:30080>
 
 2. `Login with Keycloak` 을 클릭하여 Keycloak에 로그인합니다. (management 계정으로 로그인)
 

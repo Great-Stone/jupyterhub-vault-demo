@@ -298,19 +298,40 @@ module "management" {
 # Helm
 ###############################################################################
 
+resource "vault_mount" "transit" {
+  path = "transit"
+  type = "transit"
+}
+
+resource "vault_transit_secret_backend_key" "key" {
+  backend          = vault_mount.transit.path
+  name             = "my_key"
+  deletion_allowed = true
+}
+
+resource "vault_generic_endpoint" "data_key" {
+  path           = "${vault_mount.transit.path}/datakey/plaintext/${vault_transit_secret_backend_key.key.name}"
+  data_json      = jsonencode({})
+  disable_read   = true
+  disable_delete = true
+  write_fields   = ["plaintext"]
+}
+
 resource "helm_release" "jupyterhub" {
   name       = "jupyterhub"
   repository = "https://hub.jupyter.org/helm-chart/"
   chart      = "jupyterhub"
+  version    = "4.2.0" # https://hub.jupyter.org/helm-chart/
   namespace  = "default"
   values = [
     templatefile("${path.module}/jupyterhub_values/values.yaml.tpl", {
-      client_id     = keycloak_openid_client.openid_client.client_id
-      client_secret = keycloak_openid_client.openid_client.client_secret
-      callback_url  = "http://127.0.0.1:30080/hub/oauth_callback"
-      authorize_url = "http://host.minikube.internal:8080/realms/${keycloak_realm.realm.id}/protocol/openid-connect/auth"
-      token_url     = "http://host.minikube.internal:8080/realms/${keycloak_realm.realm.id}/protocol/openid-connect/token"
-      userdata_url  = "http://host.minikube.internal:8080/realms/${keycloak_realm.realm.id}/protocol/openid-connect/userinfo"
+      crypt_keeper_key = vault_generic_endpoint.data_key.write_data["plaintext"]
+      client_id        = keycloak_openid_client.openid_client.client_id
+      client_secret    = keycloak_openid_client.openid_client.client_secret
+      callback_url     = "http://127.0.0.1:30080/hub/oauth_callback"
+      authorize_url    = "http://host.minikube.internal:8080/realms/${keycloak_realm.realm.id}/protocol/openid-connect/auth"
+      token_url        = "http://host.minikube.internal:8080/realms/${keycloak_realm.realm.id}/protocol/openid-connect/token"
+      userdata_url     = "http://host.minikube.internal:8080/realms/${keycloak_realm.realm.id}/protocol/openid-connect/userinfo"
     })
   ]
 }

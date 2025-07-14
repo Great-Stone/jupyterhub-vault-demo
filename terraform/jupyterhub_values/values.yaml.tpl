@@ -1,8 +1,10 @@
 hub:
   config:
+    # JWT 토큰을 받기위해 필요한 암호화 키 설정
     CryptKeeper:
       keys:
-        - "c_Xob_CjEzdOpBy0u8waG3QTmkSAXx3ncq7BDwwXZiQ="
+        - ${crypt_keeper_key}
+    # JWT 토큰을 받기위해 필요한 설정
     Authenticator:
       enable_auth_state: true
     JupyterHub:
@@ -86,6 +88,7 @@ singleuser:
   storage:
     type: none
   extraEnv:
+    # .Values에서 Hub에서 전달받은 환경변수를 notebook 환경변수로 받아오기
     JUPYTER_ENABLE_LAB: "yes"
     MY_SECRET: "{{ .Values.singleuser.extraEnv.MY_SECRET | default \"\" }}"
     VAULT_SECRET_FILE: "{{ .Values.singleuser.extraEnv.VAULT_SECRET_FILE | default \"\" }}"
