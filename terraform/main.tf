@@ -252,7 +252,7 @@ resource "vault_kv_secret_v2" "secret" {
 ###############################################################################
 # Vault policies
 ###############################################################################
-module "reader" {
+module "role_policies" {
   source = "./external_group"
   external_accessors = [
     vault_jwt_auth_backend.keycloak_oidc.accessor,
@@ -268,18 +268,7 @@ module "reader" {
           capabilities = ["read", "list"]
         }
       ]
-    }
-  ]
-}
-
-module "management" {
-  source = "./external_group"
-  external_accessors = [
-    vault_jwt_auth_backend.keycloak_oidc.accessor,
-    vault_jwt_auth_backend.keycloak_jwt.accessor
-  ]
-  vault_identity_oidc_key_name = vault_identity_oidc_key.keycloak_provider_key.name
-  groups = [
+    },
     {
       group_name = "management"
       rules = [

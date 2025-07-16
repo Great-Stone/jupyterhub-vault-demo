@@ -21,7 +21,7 @@ resource "vault_policy" "policy" {
 }
 
 #------------------------------------------------------------------------------#
-# Vault external group - reader
+# Vault external group
 #------------------------------------------------------------------------------#
 
 resource "vault_identity_oidc_role" "role" {
@@ -39,9 +39,25 @@ resource "vault_identity_group" "group" {
   ]
 }
 
+# 각 auth backend별로 별도 처리하여 의존성 문제 해결
+locals {
+  # 모든 조합을 미리 계산
+  group_accessor_combinations = flatten([
+    for group_idx, group in var.groups : [
+      for accessor_idx, accessor in var.external_accessors : {
+        group_idx    = group_idx
+        accessor_idx = accessor_idx
+        group_name   = group.group_name
+        accessor     = accessor
+      }
+    ]
+  ])
+}
+
 resource "vault_identity_group_alias" "group_alias" {
-  count          = length(var.groups) * length(var.external_accessors)
-  name           = var.groups[floor(count.index / length(var.external_accessors))].group_name
-  mount_accessor = var.external_accessors[count.index % length(var.external_accessors)]
-  canonical_id   = vault_identity_group.group[floor(count.index / length(var.external_accessors))].id
+  count = length(local.group_accessor_combinations)
+  
+  name           = local.group_accessor_combinations[count.index].group_name
+  mount_accessor = local.group_accessor_combinations[count.index].accessor
+  canonical_id   = vault_identity_group.group[local.group_accessor_combinations[count.index].group_idx].id
 }
